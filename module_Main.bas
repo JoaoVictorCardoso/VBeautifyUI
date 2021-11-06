@@ -3,7 +3,7 @@ Option Explicit
 Sub Main()
     Dim uie As New UIClass
    
-    '15465043000110
+
     uie.Get_Element ("Formatar")
     
     Debug.Print uie.CurrentElementMother
