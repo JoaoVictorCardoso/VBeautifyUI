@@ -58,21 +58,22 @@ KeepTrying:
             If CurrentElement Is Nothing Then
                 Set CurrentElement = oCUIAutomation.GetRootElement
             End If
+            For tps2 = ui_NamePropertyId To ui_LocalizedControlTypePropertyId
+              'If StrComp(e, CurrentElement.CurrentName, vbTextCompare) <> 0 Then
+              '    'getting childs from desktop
+              '    Set CurrentElement = ElementArray.GetElement(Count)
+                  'Debug.Print "app-root: " & CurrentElement.CurrentName & CurrentElement.CurrentClassName
+             '     CurrentElementMother = CurrentElement.CurrentName
 
-            If StrComp(e, CurrentElement.CurrentName, vbTextCompare) <> 0 Then
-                'getting childs from desktop
-                Set CurrentElement = ElementArray.GetElement(Count)
-                'Debug.Print "app-root: " & CurrentElement.CurrentName & CurrentElement.CurrentClassName
-                CurrentElementMother = CurrentElement.CurrentName
+             '     Set CurrentElement = CurrentElement.FindFirst(TreeScope_Subtree, _
+             '     Get_PropertyCondition(tps2, e))
 
-                Set CurrentElement = CurrentElement.FindFirst(TreeScope_Subtree, _
-                Get_PropertyCondition(ui_NamePropertyId, e))
+              'Else
+               '   Get_Element = CurrentElement
 
-            Else
-                Get_Element = CurrentElement
-                
-                Exit For
-            End If
+                '  Exit For
+              'End If
+            Next tps2
             
             'Set CurrentElement = oCUIAutomation.GetRootElement.FindFirst(TreeScope_Children, Get_PropertyCondition(ui_NamePropertyId, e))
         Next Count
@@ -111,7 +112,7 @@ On Error GoTo Hell
             oCUIAutomation.CreatePropertyCondition(UIAutomationClient.UIA_LocalizedControlTypePropertyId, Rq)
     End Select
 Hell:
-    ' "o inferno rola aqui"
+    ' "o inferno  aqui"
 End Function
 
 
@@ -151,7 +152,7 @@ End Function
 '        Set condition1 = oAutomation.CreateTrueCondition
 '        Set element1 = obj.FindAll(TreeScope_Children, condition1)
 '
-'        'aguarda execução para q o pc possa fazer outras tarefas
+'        'aguarda execuÃ§Ã£o para q o pc possa fazer outras tarefas
 '        DoEvents
 '        If element1.Length <> 0 Then
 '                Set element2 = obj.FindFirst(TreeScope_Children, condition1)
