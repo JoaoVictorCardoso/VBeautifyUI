@@ -1,12 +1,3 @@
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
-Attribute VB_Name = "UIClass"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
 Option Explicit
 
 Private oCUIAutomation As New CUIAutomation
@@ -26,23 +17,55 @@ Public CurrentElementMother As String
 
 Public CurrentElement As UIAutomationClient.IUIAutomationElement
 
+Public InvokePattern As UIAutomationClient.IUIAutomationInvokePattern
+Public LegacyAccPattern As UIAutomationClient.IUIAutomationLegacyIAccessiblePattern
 'Set to -1 to get desktop or search a name of element on screen
 Public Function Get_Element(e As String)
 On Error GoTo KeepTrying
     Dim tps As Condition
     For tps = ui_NamePropertyId To ui_LocalizedControlTypePropertyId
-    
+
         If e = CStr(-1) Then
             Set CurrentElement = oCUIAutomation.GetRootElement
+        ElseIf Not CurrentElement Is Nothing Then
+        'de uma mae busca um elemento
+            Dim Element As UIAutomationClient.IUIAutomationElement
+            
+            'pegar todos os filhos
+            Set Element = CurrentElement.FindFirst(TreeScope_Subtree, Get_PropertyCondition(tps, e))
+
+            
+            If Not Element Is Nothing Then
+                'Debug.Print CurrentElement.CurrentClassName & " -> " & Element.CurrentName
+                
+                Debug.Print CurrentElement.CurrentAutomationId & "-(" & Element.CurrentLocalizedControlType & ")"
+                
+                Set CurrentElement = Element
+                Get_Element = Element
+                GoTo finaliza
+                Exit For
+            End If
         Else
+        'se elemento vazio busca da raiz busca um elemento
             Set CurrentElement = oCUIAutomation.GetRootElement.FindFirst( _
             TreeScope_Children, _
             Get_PropertyCondition(tps, e))
+            '
+            
+            If Not CurrentElement Is Nothing Then
+                CurrentElementMother = CurrentElement.CurrentName
+                'Debug.Print CurrentElement.CurrentName
+                'Exit For
+                Get_Element = CurrentElement
+                GoTo finaliza
+                Exit For
+                
+            End If
         End If
-    
+
     Next tps
 
-    
+
 
 KeepTrying:
     If CurrentElement Is Nothing Then
@@ -56,37 +79,106 @@ KeepTrying:
             'if CurrentElement is null the App Root don't found the CurrentElement
             'Debug.Print "app-root: " & CurrentElement.CurrentClassName
             If CurrentElement Is Nothing Then
-                Set CurrentElement = oCUIAutomation.GetRootElement
+                'Set CurrentElement = oCUIAutomation.GetRootElement
+                GoTo jumP
             End If
-            For tps2 = ui_NamePropertyId To ui_LocalizedControlTypePropertyId
-              'If StrComp(e, CurrentElement.CurrentName, vbTextCompare) <> 0 Then
-              '    'getting childs from desktop
-              '    Set CurrentElement = ElementArray.GetElement(Count)
-                  'Debug.Print "app-root: " & CurrentElement.CurrentName & CurrentElement.CurrentClassName
-             '     CurrentElementMother = CurrentElement.CurrentName
-
-             '     Set CurrentElement = CurrentElement.FindFirst(TreeScope_Subtree, _
-             '     Get_PropertyCondition(tps2, e))
-
-              'Else
-               '   Get_Element = CurrentElement
-
-                '  Exit For
-              'End If
-            Next tps2
+            For tps = ui_NamePropertyId To ui_LocalizedControlTypePropertyId
             
+                Set CurrentElement = ElementArray.GetElement(Count)
+                
+                CurrentElementMother = CurrentElement.CurrentName
+                
+                Set CurrentElement = CurrentElement.FindFirst(TreeScope_Subtree, _
+                Get_PropertyCondition(tps, e))
+                
+                If Not CurrentElement Is Nothing Then
+                    
+                    GoTo finaliza
+                    Exit For
+                End If
+            Next tps
+
+
+jumP:
+           ' Else
+            '    Get_Element = CurrentElement
+            '
+            '    Exit For
+            'End If
+
             'Set CurrentElement = oCUIAutomation.GetRootElement.FindFirst(TreeScope_Children, Get_PropertyCondition(ui_NamePropertyId, e))
         Next Count
+    Else
+        'se tem mãe, existe.
+        Dim Elemn As UIAutomationClient.IUIAutomationElement
+        Dim tipos As Condition
+        
+        For tipos = ui_NamePropertyId To ui_LocalizedControlTypePropertyId
+            'pegar todos os filhos
+            Set Elemn = oCUIAutomation.GetRootElement.FindFirst(TreeScope_Subtree, Get_PropertyCondition(tipos, e))
+            
+            If Not Elemn Is Nothing Then
+                'Debug.Print CurrentElement.CurrentClassName & Elemn.CurrentName
+                Set CurrentElement = Elemn
+                Get_Element = Elemn
+                Exit For
+            End If
+        
+        Next tipos
+    
     End If
+
+finaliza:
+    'Debug.Print ""
+End Function
+
+Public Function Fill(txt As Variant, Optional ByVal elemt_ As Variant = Nothing)
+On Error GoTo n_clic
+    If elemt_ Is Nothing Then
+        Set LegacyAccPattern = elemt_.GetCurrentPattern(UIA_LegacyIAccessiblePatternId)
+        
+        LegacyAccPattern.SetValue (txt)
+
+    Else
+        Set LegacyAccPattern = CurrentElement.GetCurrentPattern(UIA_LegacyIAccessiblePatternId)
+        
+        LegacyAccPattern.SetValue (txt)
+    End If
+n_clic:
+    If CurrentElement Is Nothing Then
+    Else
+        
+        Set LegacyAccPattern = CurrentElement.GetCurrentPattern(UIA_LegacyIAccessiblePatternId)
+        LegacyAccPattern.CurrentValue
+        
+    End If
+
 End Function
 
 
-
-
-
-
-
-
+Public Function Clique(Optional ByVal element_ As Variant = Nothing)
+On Error GoTo nao_clic
+    If element_ Is Nothing Then
+        Set InvokePattern = CurrentElement.GetCurrentPattern(UIAutomationClient.UIA_InvokePatternId)
+        If CurrentElement.CurrentIsEnabled Then
+            InvokePattern.Invoke
+        End If
+    Else
+        Set InvokePattern = element_.GetCurrentPattern(UIAutomationClient.UIA_InvokePatternId)
+        If element_.CurrentIsEnabled Then
+            InvokePattern.Invoke
+        End If
+    End If
+    
+nao_clic:
+    'Debug.Print "Error nao clickou"
+    If Not element_ Is Nothing Then
+        Set InvokePattern = element_.GetCurrentPattern(UIAutomationClient.UIA_InvokePatternId)
+        If element_.CurrentIsEnabled Then
+            InvokePattern.Invoke
+        End If
+    End If
+End Function
 
 
 
@@ -112,7 +204,7 @@ On Error GoTo Hell
             oCUIAutomation.CreatePropertyCondition(UIAutomationClient.UIA_LocalizedControlTypePropertyId, Rq)
     End Select
 Hell:
-    ' "o inferno  aqui"
+    ' "o inferno rola aqui"
 End Function
 
 
@@ -201,5 +293,7 @@ End Function
 '        Loop
 '        If ended Then Exit Function
 'End Function
+
+
 
 
